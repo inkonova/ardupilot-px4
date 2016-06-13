@@ -90,6 +90,8 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_RangeFinder/AP_RangeFinder_6DOF.h>
 
+#include "RangeAvoid.h"
+
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -612,6 +614,7 @@ private:
     AP_Param param_loader;
 
 	AP_RangeFinder_6DOF rangefinders; 
+	RangeAvoid range_avoid; 
 
 	#if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
