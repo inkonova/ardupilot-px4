@@ -189,6 +189,8 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
+	
+	AP_HAL::BetterStream *dbgConsole; 
 
     RangeFinder rangefinder {serial_manager};
     struct {
