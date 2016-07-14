@@ -58,7 +58,8 @@ public:
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
         _aparm(aparm),
-        _motors(motors)
+        _motors(motors),
+		_motor_tilt_pitch_ang(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
         }
@@ -352,6 +353,10 @@ protected:
     AP_Motors&          _motors;
 
 protected:
+	// motor tilt
+#if FRAME_CONFIG == QUAD_PTILT_FRAME
+	float _motor_tilt_pitch_ang; 
+#endif
     /*
       state of control monitoring
     */

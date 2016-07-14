@@ -138,6 +138,8 @@ public:
     enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2 };
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
     
+	// motor tilt pitch (will be sent to correct servo in subclassed motor class)
+	void 	set_motor_tilt_angle_pitch(float pitch) { _tilt_pitch = pitch; }
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
@@ -174,6 +176,9 @@ protected:
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
+
+	float				_tilt_pitch; 				// desired motor tilt from attitude control (if supported)
+
     float               _throttle_in;               // last throttle input from set_throttle caller
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
