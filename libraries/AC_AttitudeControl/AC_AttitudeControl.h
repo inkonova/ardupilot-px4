@@ -357,6 +357,8 @@ protected:
 #if FRAME_CONFIG == QUAD_PTILT_FRAME
 	float _motor_tilt_pitch_ang; 
 #endif
+
+private:
     /*
       state of control monitoring
     */
