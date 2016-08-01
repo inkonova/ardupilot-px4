@@ -20,7 +20,11 @@ License: GPLv3
 #define DOF_SENSOR_MAX_RANGE 3
 #define DOF_SENSOR_NO_READING -1
 
+#include <AP_HAL/AP_HAL.h>
+extern const AP_HAL::HAL& hal;
+
 void AP_RangeFinder_6DOF::init(){
+	hal.console->printf("Initializing 6DOF rangefinder\n"); 
 	_port->begin(57600); 
 }
 
@@ -95,3 +99,4 @@ void AP_RangeFinder_6DOF::update(float dt){
 		b = _port->read(); 
 	}
 }
+

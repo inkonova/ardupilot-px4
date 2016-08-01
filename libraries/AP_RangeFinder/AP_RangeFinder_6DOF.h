@@ -13,7 +13,7 @@ License: GPLv3
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
 
-#include <mathlib/mathlib.h>
+#include <matrix/matrix/math.hpp>
 
 class AP_RangeFinder_6DOF {
 public: 
@@ -47,3 +47,4 @@ private:
 	float _rates[6]; 
 	int32_t _prev_readings[6]; 
 }; 
+
