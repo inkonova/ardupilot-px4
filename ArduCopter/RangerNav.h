@@ -56,8 +56,8 @@ private:
 		float get_last_velocity_prediction(); 
 		float get_last_offset_prediction(); 
 
-		math::Vector<3> get_last_input(){ return _zk; }
-		math::Vector<4> get_last_prediction(){ return _kf.get_prediction(); }
+		matrix::Vector<float, 3> get_last_input(){ return _zk; }
+		matrix::Vector<float, 4> get_last_prediction(){ return _kf.get_prediction(); }
 	protected: 
 		MedianFilter<7> _median_pos, _median_neg;  
 		MedianFilter<3> _median_flow, _median_velocity; 
@@ -66,7 +66,7 @@ private:
 		LowPassFilterFloat _lp_velocity; 
 		float _velocity; 
 		KalmanFilter<3, 4> _kf; 
-		math::Vector<3> _zk; 
+		matrix::Vector<float, 3> _zk; 
 	}; 
 
 	PVPredictor _pv_x, _pv_y; 
@@ -76,7 +76,7 @@ private:
 	MeanFilter<3> _smooth_front, _smooth_back, _smooth_flow; 
 	KalmanFilter<3, 4> _kf_range_x; 
 
-	math::Vector<4> _p_prev; 
+	matrix::Vector<4> _p_prev; 
 	LowPassFilterFloat _vel_x, _vel_y; 
 	*/
 	float calculate_altitude(float range_bottom, bool range_valid); 
@@ -85,7 +85,7 @@ private:
 	Vector2f _flow_ground_speed; 
 	MedianFilter<7> _median_bottom, _median_flow; 
 	MeanFilter<3> _smooth_bottom, _smooth_flow; 
-	math::Vector<3> _position; 
+	matrix::Vector<float, 3> _position; 
 
 	float _altitude; 
 	float _baro_zero_altitude; 

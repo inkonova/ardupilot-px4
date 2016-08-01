@@ -41,7 +41,11 @@ void Copter::read_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
    	//rangefinder.update();
 
-    //rangefinder_state.alt_healthy = ((rangefinder.status() == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count() >= RANGEFINDER_HEALTH_MAX));
+    rangefinder_state.alt_healthy = ((rangefinder.status() == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count() >= RANGEFINDER_HEALTH_MAX));
+
+    //int16_t temp_alt = rangefinder.distance_cm();
+
+	// TODO: change this when we add a new class of sensors for multidirectional rangefinders
 	rangefinder_state.alt_healthy = rangefinders.have_bottom(); 
 
 	float front, back, right, left, bottom, top; 

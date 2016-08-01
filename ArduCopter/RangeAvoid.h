@@ -22,7 +22,7 @@
 #include <AP_OpticalFlow/OpticalFlow.h>
 #include "RangerNav.h"
 
-#include <mathlib/mathlib.h>
+#include <matrix/matrix/Matrix.hpp>
 
 class RangeAvoid {
 public: 
@@ -58,7 +58,7 @@ private:
 
 	AC_PID _pitch_pid, _roll_pid; 
 	AC_PID _pitch_center_pid, _roll_center_pid; 
-	math::Vector<3> _target_pos_ef; 
+	matrix::Vector<float, 3> _target_pos_ef; 
 	float _pitchComp, _rollComp; 
 	float _flow_front_filtered, _flow_right_filtered; 
 	float _flow_distance_front, _flow_distance_right; 
