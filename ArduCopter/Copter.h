@@ -88,7 +88,9 @@
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
-#include <AP_RangeFinder/AP_RangeFinder_6DOF.h>
+#include <AP_RangeScanner/AP_RangeScanner.h>
+#include <AC_Control/AC_RateControl.h>
+#include <AC_Control/AC_AngleControl.h>
 
 #include "RangeAvoid.h"
 
@@ -615,10 +617,13 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
-	
-	AP_RangeFinder_6DOF rangefinders; 
+
+	AP_RangeScanner_6DOF_SITL rangefinders; 
 	RangerNav ranger_nav; 
 	RangeAvoid range_avoid; 
+	
+	AC_RateControl _rate_control; 
+	AC_AngleControl _angle_control; 
 
 	#if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
