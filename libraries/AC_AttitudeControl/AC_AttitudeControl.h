@@ -61,6 +61,7 @@ public:
         _motors(motors),
 		_motor_tilt_pitch_ang(0)
         {
+			_output_enabled = true; 
             AP_Param::setup_object_defaults(this, var_info);
         }
 
@@ -241,6 +242,7 @@ public:
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+	void enable(bool e) { _output_enabled = e; }
 protected:
 
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad
@@ -352,6 +354,7 @@ protected:
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
 
+	bool _output_enabled; 
 protected:
 	// motor tilt
 #if FRAME_CONFIG == QUAD_PTILT_FRAME
