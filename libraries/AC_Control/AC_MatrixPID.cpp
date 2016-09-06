@@ -167,7 +167,7 @@ void AC_MatrixPID::update(float dt){
 
 	// anti windup using back calculation using the output limits. 
 	matrix::Matrix<float, 3, 6> Ol = O.limited(Ln, Lx); 
-	// TODO: fix this so that it works as expected
+	// TODO: fix this so it works as expected
 	//I -= (O - Ol);	
 	//O = Ol; 
 

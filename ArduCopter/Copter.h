@@ -337,7 +337,7 @@ private:
     } sensor_health;
 
     // setup FRAME_MAV_TYPE
-#if (FRAME_CONFIG == QUAD_FRAME) || (FRAME_CONFIG == QUAD_PTILT_FRAME)
+#if (FRAME_CONFIG == QUAD_FRAME)
  #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
 #elif (FRAME_CONFIG == TRI_FRAME)
  #define FRAME_MAV_TYPE MAV_TYPE_TRICOPTER
@@ -623,8 +623,7 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-//	AP_RangeScanner_6DOF_SITL rangefinders; 
-	AP_RangeScanner_6DOF_Serial rangefinders; 
+	AP_RangeScanner_6DOF_SITL rangefinders; 
 	RangerNav ranger_nav; 
 	RangeAvoid range_avoid; 
 	
@@ -632,8 +631,10 @@ private:
 	AC_AngleControl _angle_control; 
 	AC_VelocityControl _velocity_control; 
 	AC_RangerControl _ranger_control; 
-	ObstacleSensor	_obstacle_sensor; 
-	
+	ApproachSensor _approach; 
+	//ObstacleSensor	_obstacle_sensor; 
+	AttitudeEstimator _att; 
+
 	AC_MatrixPID _pid; 
 
 	#if FRAME_CONFIG == HELI_FRAME
