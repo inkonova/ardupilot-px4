@@ -623,7 +623,8 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-	AP_RangeScanner_6DOF_SITL rangefinders; 
+//	AP_RangeScanner_6DOF_SITL rangefinders; 
+	AP_RangeScanner_6DOF_Serial rangefinders; 
 	RangerNav ranger_nav; 
 	RangeAvoid range_avoid; 
 	
