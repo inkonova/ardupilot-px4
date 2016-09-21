@@ -237,6 +237,9 @@ void AC_AttitudeControl_Multi::rate_controller_run()
 		_motors.set_roll(rate_target_to_motor_roll(_rate_target_ang_vel.x));
 		_motors.set_pitch(rate_target_to_motor_pitch(_rate_target_ang_vel.y));
 		_motors.set_yaw(rate_target_to_motor_yaw(_rate_target_ang_vel.z));
+		#if FRAME_CONFIG == QUAD_PTILT_FRAME
+			_motors.set_motor_tilt_angle_pitch(_motor_tilt_pitch_ang); 
+		#endif
 	}
 
     control_monitor_update();
