@@ -164,12 +164,14 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 // Command a Quaternion attitude with feedforward and smoothing
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain)
 {
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
-	Vector3f eu; 
-	attitude_desired_quat.to_euler(eu.x, eu.y, eu.z); 
-	_motor_tilt_pitch_ang = degrees(eu.y); 
-	attitude_desired_quat.from_euler(eu.x, 0, eu.z); 
-#endif
+	if(_tilt_frame){
+		Vector3f eu; 
+		attitude_desired_quat.to_euler(eu.x, eu.y, eu.z); 
+		_motor_tilt_pitch_ang = degrees(eu.y); 
+		_attitude_target_euler_angle.y = 0; 
+		attitude_desired_quat.from_euler(eu.x, 0, eu.z); 
+	}
+
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
@@ -209,6 +211,11 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
     float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
     float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+
+	if(_tilt_frame){
+		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01; 
+		euler_pitch_angle_cd = 0; 
+	}
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -260,11 +267,11 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
     float euler_yaw_angle = radians(euler_yaw_angle_cd*0.01f);
 
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
-	// for tilted frame we save the input pitch target and set our target to 0 (stabilized pitch)
-	_motor_tilt_pitch_ang = degrees(_attitude_target_euler_angle.y); 
-	_attitude_target_euler_angle.y = 0; 
-#endif
+	if(_tilt_frame){
+		// for tilted frame we save the input pitch target and set our target to 0 (stabilized pitch)
+		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01; 
+		euler_pitch_angle_cd = 0; 
+	}
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -323,11 +330,8 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     float euler_pitch_rate = radians(euler_pitch_rate_cds*0.01f);
     float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
 
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
-	// for tilted frame we save the input pitch target and set our target to 0 (stabilized pitch)
-	_motor_tilt_pitch_ang = degrees(_attitude_target_euler_angle.y); 
-	_attitude_target_euler_angle.y = 0; 
-#endif
+	// for rate we are flying leveled
+	_motor_tilt_pitch_ang = 0; 
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -371,11 +375,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     float pitch_rate_rads = radians(pitch_rate_bf_cds*0.01f);
     float yaw_rate_rads = radians(yaw_rate_bf_cds*0.01f);
 
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
-	// for tilted frame we save the input pitch target and set our target to 0 (stabilized pitch)
-	_motor_tilt_pitch_ang = degrees(_attitude_target_euler_angle.y); 
-	_attitude_target_euler_angle.y = 0; 
-#endif
+	// for rate we are flying leveled
+	_motor_tilt_pitch_ang = 0; 
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);

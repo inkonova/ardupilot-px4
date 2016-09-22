@@ -137,8 +137,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     AP_GROUPEND
 };
 
-AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
-    AC_AttitudeControl(ahrs, aparm, motors, dt),
+AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt, bool tiltframe) :
+    AC_AttitudeControl(ahrs, aparm, motors, dt, tiltframe),
     _motors_multi(motors),
     _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
     _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
@@ -190,12 +190,13 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
     // inverted_factor is 1 for tilt angles below 60 degrees
     // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
 
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
-	// throttle compensation for tilted motors is body pitch plus motor tilt angle
-	float cos_pitch = cos(_ahrs.pitch + radians(_motor_tilt_pitch_ang)); 
-#else
-	float cos_pitch = _ahrs.cos_pitch(); 
-#endif
+	float cos_pitch = 0; 
+	if(_tilt_frame) {
+		// throttle compensation for tilted motors is body pitch plus motor tilt angle
+		cos_pitch = cos(_ahrs.pitch + radians(_motor_tilt_pitch_ang)); 
+	} else {
+		cos_pitch = _ahrs.cos_pitch(); 
+	}
 
     float cos_tilt = cos_pitch * _ahrs.cos_roll();
     float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
@@ -228,18 +229,18 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
 }
 
+#include <stdio.h>
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
-
+	
+	printf("rate_controller_run(): %f\n", _motor_tilt_pitch_ang); 
 	if(_output_enabled){
 		_motors.set_roll(rate_target_to_motor_roll(_rate_target_ang_vel.x));
 		_motors.set_pitch(rate_target_to_motor_pitch(_rate_target_ang_vel.y));
 		_motors.set_yaw(rate_target_to_motor_yaw(_rate_target_ang_vel.z));
-		#if FRAME_CONFIG == QUAD_PTILT_FRAME
-			_motors.set_motor_tilt_angle_pitch(_motor_tilt_pitch_ang); 
-		#endif
+		_motors.set_motor_tilt_angle_pitch(_motor_tilt_pitch_ang); 
 	}
 
     control_monitor_update();
