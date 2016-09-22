@@ -26,7 +26,7 @@ public:
 	Vector3f get_safest_point(); 
 	void update(); 
 private: 
-	//Eigen::filter::ConstantVelocityPositionFilter<float> _front, _back, _right, _left, _bottom, _top;  
+	Eigen::filter::ConstantVelocityPositionFilter<float> _front, _back, _right, _left, _bottom, _top;  
 	AP_RangeScanner_6DOF &_range; 
 	long long _last_range_reading; 
 }; 

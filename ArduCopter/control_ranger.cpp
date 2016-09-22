@@ -168,7 +168,7 @@ void Copter::control_ranger_run()
 	*/
 	_approach.update(); 
 	Vector3f u = _approach.get_desired_angles(); 
-	Vector3f c = _approach.get_safest_point(); 
+	//Vector3f c = _approach.get_safest_point(); 
 	target_roll = target_roll * 3.0f; // + c.y * 1.5; 		
 	target_pitch = target_pitch * 3.0f;// + -c.x * 1.5f; 		
 	//target_roll += c.y * 0.2 + u.x; 
