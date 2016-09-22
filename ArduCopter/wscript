@@ -29,12 +29,15 @@ def build(bld):
             'AP_Relay',
             'AP_ServoRelayEvents',
             'AP_Avoidance',
-            'AP_AdvancedFailsafe'
+            'AP_AdvancedFailsafe',
+			'AP_RangeScanner',
+			'AC_RangerControl',
+			'AC_Control'
         ],
     )
 
     frames = (
-        'quad', 'tri', 'hexa', 'y6', 'octa', 'octa-quad', 'heli', 'single',
+        'quad', 'quad-ptilt', 'tri', 'hexa', 'y6', 'octa', 'octa-quad', 'heli', 'single',
         'coax',
     )
     for frame in frames:
