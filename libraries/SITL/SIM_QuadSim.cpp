@@ -133,6 +133,8 @@ bool QuadSim::start_sim(void){
 	_shmin = (char*)shmat(in, NULL, 0); 
 	_shmout = (char*)shmat(out, NULL, 0); 
 
+	memset(_shmin, 0, sizeof(struct client_packet)); 
+
 	return true;
 }
 
@@ -157,7 +159,12 @@ void QuadSim::send_state(const struct sitl_input &input){
 	pkt.mag[0] = mag_bf.x; pkt.mag[1] = mag_bf.y; pkt.mag[2] = mag_bf.z; 
 
 	memcpy(_shmout, &pkt, sizeof(pkt)); 
-    //sock.sendto(&pkt, sizeof(pkt), "127.0.0.1", 9002);
+
+	printf("Servos: "); 
+	for(int c = 0; c < 8; c++){
+		printf("%d: %d, ", c, input.servos[c]); 
+	}
+	printf("\n"); 
 }
 
 #include <errno.h>
@@ -237,12 +244,12 @@ void QuadSim::update(const struct sitl_input &input){
 	::printf("6dof: %f %f %f %f %f %f\n", pkt.range[0], pkt.range[1], pkt.range[2], pkt.range[3], pkt.range[4], pkt.range[5]); 
 	Vector3f a = dcm * accel_body; 	
 	::printf("accelef: %f %f %f\n", a.x, a.y, a.z); 
-*/
 	::printf("pos_sitl: %f %f %f\n", position.x, position.y, position.z); 
 	::printf("6dof: %f %f %f %f %f %f\n", pkt.range[0], pkt.range[1], pkt.range[2], pkt.range[3], pkt.range[4], pkt.range[5]); 
+*/	
 	rcin_chan_count = 8; 
 	for(unsigned c = 0; c < 8; c++) rcin[c] = pkt.rcin[c]; 
-	
+
 	memcpy(scan6dof, pkt.range, sizeof(scan6dof)); 
 
 	adjust_frame_time(1000);

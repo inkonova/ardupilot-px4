@@ -120,7 +120,7 @@ void AttitudeEstimator::update(float dt){
 
 	// -- update
 	// calculate kalman gain
-	matrix::Matrix<float, 3, 3> K = P * H.transposed() * innovation_cov.inversed(); 
+	matrix::Matrix<float, 3, 3> K = P * H.transposed() * matrix::inversed(innovation_cov); 
 
 	// use approximation to update orientation quaternion 
 	matrix::Vector3f dw = K * aErr; 

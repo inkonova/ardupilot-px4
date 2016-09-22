@@ -20,7 +20,7 @@ public:
 	// outputs values to servos
 	virtual void 		output_to_servos(); 
 
-	virtual void		output(); 
+	virtual void		output() override; 
 
 	// params
 	static const struct AP_Param::GroupInfo	var_info[]; 

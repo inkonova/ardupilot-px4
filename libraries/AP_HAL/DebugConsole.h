@@ -14,8 +14,8 @@ public:
     void vprintf(const char *s, va_list ap);
 
 	// Stream methods
-	virtual size_t available() { return 0; };
-    virtual size_t txspace() { return 4096; };
+	virtual uint32_t available() { return 0; };
+    virtual uint32_t txspace() { return 4096; };
     virtual int16_t read() { return -1; };
 
 	// Print methods
