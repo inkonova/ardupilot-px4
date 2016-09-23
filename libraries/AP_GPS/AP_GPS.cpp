@@ -206,6 +206,11 @@ void AP_GPS::send_blob_update(uint8_t instance)
 void
 AP_GPS::detect_instance(uint8_t instance)
 {
+    if (_port[instance] == NULL) {
+        // UART not available
+        return;
+    }
+
     AP_GPS_Backend *new_gps = NULL;
     struct detect_state *dstate = &detect_state[instance];
     uint32_t now = AP_HAL::millis();
@@ -227,12 +232,7 @@ AP_GPS::detect_instance(uint8_t instance)
         goto found_gps;
     }
 #endif
-    
-    if (_port[instance] == NULL) {
-        // UART not available
-        return;
-    }
-
+   
     state[instance].instance = instance;
     state[instance].status = NO_GPS;
     state[instance].hdop = 9999;
