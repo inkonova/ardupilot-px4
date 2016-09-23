@@ -15,6 +15,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if 0
 #include "AttitudeEstimator.h"
 #include <kalman/include/KalmanFilter.hpp>
 #include <matrix/matrix/Quaternion.hpp>
@@ -249,4 +250,4 @@ void AttitudeEstimator::get_estimated_omega(float (&w)[3]){
 void AttitudeEstimator::update(float dt){
 	_data->update(dt); 
 }
-
+#endif

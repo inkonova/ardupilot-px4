@@ -1,6 +1,6 @@
 #include "Copter.h"
 #include <matrix/matrix/Euler.hpp>
-#include <kalman/include/ConstantVelocityPositionFilter.hpp>
+//#include <kalman/include/ConstantVelocityPositionFilter.hpp>
 
 // same controller as the stabi
 bool Copter::control_ranger_init(bool ignore_checks){
@@ -38,6 +38,7 @@ FILE *logfile = 0;
 // should be called at 100hz or more
 void Copter::control_ranger_run()
 {
+#if 0 
 	attitude_control.enable(false); 
 
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -217,6 +218,7 @@ void Copter::control_ranger_run()
 		degrees(ahrs.roll), degrees(ahrs.pitch), degrees(ahrs.yaw)); 	
 		*/
 	//fflush(logfile); 
+#endif
 #if 0
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();

@@ -95,8 +95,8 @@
 #include <AC_Control/AC_PositionControl.h>
 #include <AC_Control/AC_MatrixPID.h>
 #include <AC_RangerControl/AC_RangerControl.h>
-#include <AC_RangerControl/ApproachSensor.h>
-#include <AC_RangerControl/AttitudeEstimator.h>
+//#include <AC_RangerControl/ApproachSensor.h>
+//#include <AC_RangerControl/AttitudeEstimator.h>
 //#include <AC_RangerControl/ObstacleSensor.h>
 //#include <AC_RangerControl/RangeAvoid.h>
 
@@ -338,7 +338,7 @@ private:
     } sensor_health;
 
     // setup FRAME_MAV_TYPE
-#if (FRAME_CONFIG == QUAD_FRAME)
+#if (FRAME_CONFIG == QUAD_FRAME) || (FRAME_CONFIG == QUAD_PTILT_FRAME)
  #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
 #elif (FRAME_CONFIG == TRI_FRAME)
  #define FRAME_MAV_TYPE MAV_TYPE_TRICOPTER
@@ -632,9 +632,9 @@ private:
 	AC_AngleControl _angle_control; 
 	AC_VelocityControl _velocity_control; 
 	AC_RangerControl _ranger_control; 
-	ApproachSensor _approach; 
+	//ApproachSensor _approach; 
 	//ObstacleSensor	_obstacle_sensor; 
-	AttitudeEstimator _att; 
+	//AttitudeEstimator _att; 
 
 	AC_MatrixPID _pid; 
 

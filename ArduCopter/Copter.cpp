@@ -129,7 +129,7 @@ Copter::Copter(void) :
 	_rate_control(),
 	_angle_control(),
 	_velocity_control(),
-	_approach(rangefinders), 
+	//_approach(rangefinders), 
 	//_obstacle_sensor(ahrs, rangefinders), 
 	_ranger_control()
 {

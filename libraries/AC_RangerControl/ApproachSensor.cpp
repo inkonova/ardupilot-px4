@@ -15,6 +15,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if 0
 #include "ApproachSensor.h"
 
 #define SENSOR_Q 10
@@ -102,4 +103,4 @@ Vector3f ApproachSensor::get_desired_angles(){
 
 	return Vector3f(roll, pitch, yaw); 
 }
-
+#endif
