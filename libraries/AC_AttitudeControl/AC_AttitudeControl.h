@@ -47,24 +47,7 @@ public:
     AC_AttitudeControl( AP_AHRS &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
-                        float dt, bool tilt_frame) :
-        _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _dt(dt),
-        _angle_boost(0),
-        _use_ff_and_input_shaping(true),
-        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
-        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
-        _ahrs(ahrs),
-        _aparm(aparm),
-        _motors(motors),
-		_motor_tilt_pitch_ang(0)
-        {
-			_output_enabled = true; 
-			_tilt_frame = tilt_frame; 
-            AP_Param::setup_object_defaults(this, var_info);
-        }
+                        float dt, bool tilt_frame); 
 
     // Empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl() {}
@@ -357,7 +340,6 @@ protected:
 
 	// puts the controller into tiltframe mode where forward is controlled by tilting servos and controller tries to stay level 
 	bool _tilt_frame; 
-
 	bool _output_enabled; 
 protected:
 	// motor tilt

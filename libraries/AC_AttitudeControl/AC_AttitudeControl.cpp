@@ -97,6 +97,29 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPEND
 };
 
+AC_AttitudeControl::AC_AttitudeControl( AP_AHRS &ahrs,
+                        const AP_Vehicle::MultiCopter &aparm,
+                        AP_Motors& motors,
+                        float dt, bool tilt_frame) :
+        _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
+        _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
+        _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
+        _dt(dt),
+        _angle_boost(0),
+        _use_ff_and_input_shaping(true),
+        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _ahrs(ahrs),
+        _aparm(aparm),
+        _motors(motors),
+		_motor_tilt_pitch_ang(0)
+        {
+			_output_enabled = true; 
+			_tilt_frame = tilt_frame;
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+
+
 // Set output throttle and disable stabilization
 void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
 {
@@ -160,18 +183,19 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 //    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
 
 
-
+#include <stdio.h>
 // Command a Quaternion attitude with feedforward and smoothing
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain)
 {
+	/*
 	if(_tilt_frame){
 		Vector3f eu; 
 		attitude_desired_quat.to_euler(eu.x, eu.y, eu.z); 
 		_motor_tilt_pitch_ang = degrees(eu.y); 
 		_attitude_target_euler_angle.y = 0; 
 		attitude_desired_quat.from_euler(eu.x, 0, eu.z); 
-	}
-
+		printf("quat pitch: %lf\n", _motor_tilt_pitch_ang); 
+	}*/
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
@@ -212,13 +236,13 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
     float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
 
-	if(_tilt_frame){
-		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01; 
-		euler_pitch_angle_cd = 0; 
-	}
-
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
+
+	if(_tilt_frame){
+		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01; 
+		euler_pitch_angle = 0; 
+	}
 
     // ensure smoothing gain can not cause overshoot
     smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);
@@ -267,14 +291,14 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
     float euler_yaw_angle = radians(euler_yaw_angle_cd*0.01f);
 
+    // calculate the attitude target euler angles
+    _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
+
 	if(_tilt_frame){
 		// for tilted frame we save the input pitch target and set our target to 0 (stabilized pitch)
 		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01; 
-		euler_pitch_angle_cd = 0; 
+		euler_pitch_angle = 0; 
 	}
-
-    // calculate the attitude target euler angles
-    _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
     // ensure smoothing gain can not cause overshoot
     smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);
