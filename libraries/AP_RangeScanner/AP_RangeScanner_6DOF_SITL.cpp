@@ -38,6 +38,7 @@ void AP_RangeScanner_6DOF_SITL::init(){
 }
 
 void AP_RangeScanner_6DOF_SITL::update(float dt){
+	if(_sitl == NULL) return; 
 	memcpy(_values, _sitl->state.scan6dof, sizeof(_values)); 	
 	_notify_new_reading(); 
 }
