@@ -23,7 +23,5 @@ public:
 	virtual void 		output(); 	
 	virtual void		output_to_motors(){ AP_MotorsMatrix::output_to_motors(); }; 
 
-	void set_motor_pitch(float deg); 
 protected:
-	float _tilt_pitch; 
 };
