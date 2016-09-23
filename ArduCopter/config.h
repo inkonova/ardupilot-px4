@@ -326,22 +326,22 @@
 //
 
 #ifndef FLIGHT_MODE_1
- # define FLIGHT_MODE_1                  STABILIZE
+ # define FLIGHT_MODE_1                  ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_2
- # define FLIGHT_MODE_2                  STABILIZE
+ # define FLIGHT_MODE_2                  ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_3
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_4
- # define FLIGHT_MODE_4                  STABILIZE
+ # define FLIGHT_MODE_4                  ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_5
- # define FLIGHT_MODE_5                  STABILIZE
+ # define FLIGHT_MODE_5                  ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_6
- # define FLIGHT_MODE_6                  STABILIZE
+ # define FLIGHT_MODE_6                  ALT_HOLD
 #endif
 
 
