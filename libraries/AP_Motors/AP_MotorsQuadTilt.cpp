@@ -59,14 +59,18 @@ void AP_MotorsQuadTilt::setup_motors(){
 void AP_MotorsQuadTilt::output(){
 	float servo_scale = (constrain_float(_servo_travel, 0, 90) / 90.0f); // 0.0 - 1.0. 
 	uint16_t servo_pwm = constrain_int16(1500 + 500 * constrain_float(_tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
+	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-_tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
 
-	if(!is_zero(_tilt_pitch)) printf("pwm %d\n", servo_pwm); 
 	if(_servo_on && _servo_channel > 0){
 		rc_write(_servo_channel - 1, servo_pwm); 
+		rc_write(_servo_channel - 2, inv_servo_pwm); 
 	} else {
 		// center servo
 		rc_write(_servo_channel - 1, 1500); 
 	}
+
+	// radio passthrough (ref: camera switch)
+	rc_write(4, hal.rcin->read(4)); 
 
 	AP_MotorsQuad::output(); 
 }
