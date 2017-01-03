@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // performs pre-arm checks. expects to be called at 1hz.
@@ -75,18 +73,15 @@ bool Copter::pre_arm_checks(bool display_failure)
         return true;
     }
 
-    bool ret = true;
-    ret &= barometer_checks(display_failure);
-    ret &= rc_calibration_checks(display_failure);
-    ret &= compass_checks(display_failure);
-    ret &= gps_checks(display_failure);
-    ret &= fence_checks(display_failure);
-    ret &= ins_checks(display_failure);
-    ret &= board_voltage_checks(display_failure);
-    ret &= parameter_checks(display_failure);
-    ret &= pilot_throttle_checks(display_failure);
-
-    return ret;
+    return barometer_checks(display_failure)
+        & rc_calibration_checks(display_failure)
+        & compass_checks(display_failure)
+        & gps_checks(display_failure)
+        & fence_checks(display_failure)
+        & ins_checks(display_failure)
+        & board_voltage_checks(display_failure)
+        & parameter_checks(display_failure)
+        & pilot_throttle_checks(display_failure);
 }
 
 bool Copter::rc_calibration_checks(bool display_failure)
@@ -380,6 +375,17 @@ bool Copter::parameter_checks(bool display_failure)
             return false;
         }
         #endif
+
+        #if PROXIMITY_ENABLED == ENABLED
+        // check proximity sensor if enabled
+        if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
+            }
+            return false;
+        }
+        #endif
+
         #if FRAME_CONFIG == HELI_FRAME
         // check helicopter parameters
         if (!motors.parameter_check(display_failure)) {
@@ -535,6 +541,20 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
         return true;
     }
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    // check GPS configuration has completed
+    uint8_t first_unconfigured = gps.first_unconfigured_gps();
+    if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
+        if (display_failure) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
+                                             "PreArm: GPS %d failing configuration checks",
+                                              first_unconfigured + 1);
+            gps.broadcast_first_configuration_failure_reason();
+        }
+        return false;
+    }
+#endif
+
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
@@ -632,6 +652,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     if (!ahrs.healthy()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
+        }
+        return false;
+    }
+
+    // check compass health
+    if (!compass.healthy()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass not healthy");
         }
         return false;
     }

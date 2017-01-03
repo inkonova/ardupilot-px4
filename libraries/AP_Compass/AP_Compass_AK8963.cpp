@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -258,18 +257,6 @@ void AP_Compass_AK8963::_update()
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-    /*
-      the disco has a very challenging magnetic environment around the
-      AK8975. The offsets are very large, and prevent calibration
-      completing even with a large fitness. The following brings the
-      values to within range of what the on-board calibrator can
-      handle
-     */
-    raw_field.x -= 350;
-    raw_field.z -= 1800;
-#endif
-    
     // publish raw_field (uncorrected point sample) for calibration use
     publish_raw_field(raw_field, time_us, _compass_instance);
 

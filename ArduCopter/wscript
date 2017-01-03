@@ -33,6 +33,7 @@ def build(bld):
 			'AP_RangeScanner',
 			'AC_RangerControl',
 			'AC_Control'
+            'AP_Proximity'
         ],
     )
 

@@ -44,7 +44,6 @@ public:
     int gps2_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
-    uint16_t last_pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool new_rc_input;
     void loop_hook(void);
@@ -118,6 +117,10 @@ private:
     void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload);
     void _update_gps_sbp(const struct gps_data *d);
     void _update_gps_file(const struct gps_data *d);
+    void _update_gps_nova(const struct gps_data *d);
+    void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
+    uint32_t CRC32Value(uint32_t icrc);
+    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
@@ -131,7 +134,6 @@ private:
     void _output_to_flightgear(void);
     void _simulator_servos(SITL::Aircraft::sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
-    void _apply_servo_filter(float deltat);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();
     float _rand_float(void);

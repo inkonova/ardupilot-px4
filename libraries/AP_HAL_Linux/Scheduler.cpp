@@ -41,6 +41,7 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #define APM_LINUX_RCIN_RATE             2000
 #define APM_LINUX_TONEALARM_RATE        100
@@ -370,6 +371,7 @@ void Scheduler::_run_uarts()
 #else
     UARTDriver::from(hal.uartC)->_timer_tick();
 #endif
+    UARTDriver::from(hal.uartD)->_timer_tick();
     UARTDriver::from(hal.uartE)->_timer_tick();
     UARTDriver::from(hal.uartF)->_timer_tick();
 }

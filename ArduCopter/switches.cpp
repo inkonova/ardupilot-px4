@@ -1,21 +1,16 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
 
 //Documentation of Aux Switch Flags:
-static union {
-    struct {
-        uint8_t CH6_flag            : 2; // 0, 1    // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH7_flag            : 2; // 2, 3    // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH8_flag            : 2; // 4, 5    // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH9_flag            : 2; // 6, 7    // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH10_flag           : 2; // 8, 9    // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH11_flag           : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH12_flag           : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    };
-    uint32_t value;
+struct {
+    uint8_t CH6_flag    : 2; // 0, 1    // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH7_flag    : 2; // 2, 3    // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH8_flag    : 2; // 4, 5    // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH9_flag    : 2; // 6, 7    // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH10_flag   : 2; // 8, 9    // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH11_flag   : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH12_flag   : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
 } aux_con;
 
 void Copter::read_control_switch()
@@ -86,23 +81,23 @@ bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 // check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
 bool Copter::check_duplicate_auxsw(void)
 {
-    bool ret = ((g.ch7_option != AUXSW_DO_NOTHING) && (g.ch7_option == g.ch8_option ||
-                g.ch7_option == g.ch9_option || g.ch7_option == g.ch10_option ||
-                g.ch7_option == g.ch11_option || g.ch7_option == g.ch12_option));
+    uint8_t auxsw_option_counts[AUXSW_SWITCH_MAX] = {};
+    auxsw_option_counts[g.ch7_option]++;
+    auxsw_option_counts[g.ch8_option]++;
+    auxsw_option_counts[g.ch9_option]++;
+    auxsw_option_counts[g.ch10_option]++;
+    auxsw_option_counts[g.ch11_option]++;
+    auxsw_option_counts[g.ch12_option]++;
 
-    ret = ret || ((g.ch8_option != AUXSW_DO_NOTHING) && (g.ch8_option == g.ch9_option ||
-                    g.ch8_option == g.ch10_option || g.ch8_option == g.ch11_option ||
-                    g.ch8_option == g.ch12_option));
-
-    ret = ret || ((g.ch9_option != AUXSW_DO_NOTHING) && (g.ch9_option == g.ch10_option ||
-                    g.ch9_option == g.ch11_option || g.ch9_option == g.ch12_option));
-
-    ret = ret || ((g.ch10_option != AUXSW_DO_NOTHING) && (g.ch10_option == g.ch11_option ||
-                    g.ch10_option == g.ch12_option));
-
-    ret = ret || ((g.ch11_option != AUXSW_DO_NOTHING) && (g.ch11_option == g.ch12_option));
-
-    return ret;
+    for (uint8_t i=0; i<sizeof(auxsw_option_counts); i++) {
+        if (i == AUXSW_DO_NOTHING) {
+            continue;
+        }
+        if (auxsw_option_counts[i] > 1) {
+            return true;
+        }
+    }
+   return false;
 }
 
 void Copter::reset_control_switch()

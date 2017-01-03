@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
@@ -131,8 +129,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS mode control
-    // @Description: This controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = use no GPS (optical flow will be used if available)
-    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS use optical flow
+    // @Description: This controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = Inhibit GPS use - this can be useful when flying with an optical flow sensor in an environment where GPS quality is poor and subject to large multipath errors.
+    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE", 1, NavEKF2, _fusionModeGPS, 0),
 
@@ -626,6 +624,11 @@ bool NavEKF2::InitialiseFilter(void)
         ret &= core[i].InitialiseFilterBootstrap();
     }
 
+    // zero the structs used capture reset events
+    memset(&yaw_reset_data, 0, sizeof(yaw_reset_data));
+    memset(&pos_reset_data, 0, sizeof(pos_reset_data));
+    memset(&pos_down_reset_data, 0, sizeof(pos_down_reset_data));
+
     check_log_write();
     return ret;
 }
@@ -641,30 +644,52 @@ void NavEKF2::UpdateFilter(void)
     
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
+    bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
         // if the previous core has only recently finished a new state prediction cycle, then
         // don't start a new cycle to allow time for fusion operations to complete if the update
         // rate is higher than 200Hz
-        bool statePredictEnabled;
         if ((i > 0) && (core[i-1].getFramesSincePredict() < 2) && (ins.get_sample_rate() > 200)) {
-            statePredictEnabled = false;
+            statePredictEnabled[i] = false;
         } else {
-            statePredictEnabled = true;
+            statePredictEnabled[i] = true;
         }
-        core[i].UpdateFilter(statePredictEnabled);
+        core[i].UpdateFilter(statePredictEnabled[i]);
     }
 
-    // If the current core selected has a bad fault score or is unhealthy, switch to a healthy core with the lowest fault score
-    if (core[primary].faultScore() > 0.0f || !core[primary].healthy()) {
-        float score = 1e9f;
-        for (uint8_t i=0; i<num_cores; i++) {
-            if (core[i].healthy()) {
-                float tempScore = core[i].faultScore();
-                if (tempScore < score) {
-                    primary = i;
-                    score = tempScore;
+    // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
+    float primaryErrorScore = core[primary].errorScore();
+    if (primaryErrorScore > 1.0f || !core[primary].healthy()) {
+        float lowestErrorScore = primaryErrorScore; // lowest error score from all lanes
+        uint8_t newPrimaryIndex = primary; // index for new primary
+        for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
+
+            if (coreIndex != primary) {
+                // an alternative core is available for selection only if healthy and if states have been updated on this time step
+                bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
+
+                // If the primary core is unhealthy and another core is available, then switch now
+                if (!core[primary].healthy() && altCoreAvailable) {
+                    newPrimaryIndex = coreIndex;
+                    break;
+                }
+
+                // If the primary core is still healthy,then switching is optional and will only be done if
+                // a core with a significantly lower error score can be found
+                bool maySwitch = core[primary].healthy() && altCoreAvailable;
+                float altErrorScore = core[coreIndex].errorScore();
+                if ((altErrorScore < 0.67f * primaryErrorScore) && (altErrorScore < lowestErrorScore) && maySwitch) {
+                    newPrimaryIndex = coreIndex;
+                    lowestErrorScore = altErrorScore;
                 }
             }
+        }
+        // update the yaw and position reset data to capture changes due to the lane switch
+        if (newPrimaryIndex != primary) {
+            updateLaneSwitchYawResetData(newPrimaryIndex, primary);
+            updateLaneSwitchPosResetData(newPrimaryIndex, primary);
+            updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
+            primary = newPrimaryIndex;
         }
     }
 
@@ -1152,69 +1177,80 @@ bool NavEKF2::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
-// return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+// Returns the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
+// Returns the time of the last yaw angle reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
 uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
 {
     if (!core) {
         return 0;
     }
 
-    // check for an internal ekf yaw reset
-    float temp_yaw_delta;
-    uint32_t ekf_reset_ms = core[primary].getLastYawResetAngle(temp_yaw_delta);
-    if (ekf_reset_ms != yaw_step_data.last_ekf_reset_ms) {
-        // record the time of the ekf's internal yaw reset event
-        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
+    yawAngDelta = 0.0f;
 
-        // record the the ekf's internal yaw reset value
-        yaw_step_data.yaw_delta = temp_yaw_delta;
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
 
-        // record the yaw reset event time
-        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastYawReset_ms = yaw_reset_data.last_primary_change;
 
+    // There has been a change notification in the primary core that the controller has not consumed
+    // or this is a repeated acce
+    if (yaw_reset_data.core_changed || yaw_reset_data.last_function_call == now_time_ms) {
+        yawAngDelta = yaw_reset_data.core_delta;
+        yaw_reset_data.core_changed = false;
     }
 
-    // check for a core switch and if a switch has occurred, set the yaw reset delta
-    // to the difference in yaw angle between the current and last yaw angle
-    Vector3f eulers_primary;
-    core[primary].getEulerAngles(eulers_primary);
-    if (primary != yaw_step_data.prev_instance) {
-        // the delta is the difference between the current and previous yaw
-        // This overwrites any yaw reset value recorded from an internal ekf reset
-        // that has occured on the same time-step
-        yaw_step_data.yaw_delta = wrap_PI(eulers_primary.z - yaw_step_data.prev_yaw);
+    // Record last time controller got the yaw reset
+    yaw_reset_data.last_function_call = now_time_ms;
 
-        // record the time of the yaw reset event
-        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
-
-        // update the time recorded for the last ekf internal yaw reset forthe primary core to
-        // prevent a yaw ekf reset event being published on the next frame due to the change in time
-        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
-
+    // There has been a reset inside the core since we switched so update the time and delta
+    float temp_yawAng;
+    uint32_t lastCoreYawReset_ms = core[primary].getLastYawResetAngle(temp_yawAng);
+    if (lastCoreYawReset_ms > lastYawReset_ms) {
+        yawAngDelta = wrap_PI(yawAngDelta + temp_yawAng);
+        lastYawReset_ms = lastCoreYawReset_ms;
     }
 
-    // record the yaw angle from the primary core
-    yaw_step_data.prev_yaw = eulers_primary.z;
-
-    // record the primary core
-    yaw_step_data.prev_instance = primary;
-
-    // return the yaw delta from the last event
-    yawAngDelta = yaw_step_data.yaw_delta;
-
-    // return the time of the last event
-    return yaw_step_data.yaw_reset_time_ms;
+    return lastYawReset_ms;
 }
 
-// return the amount of NE position change due to the last position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &pos) const
+// Returns the amount of NE position change due to the last position reset or core switch in metres
+// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
+uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &posDelta)
 {
     if (!core) {
         return 0;
     }
-    return core[primary].getLastPosNorthEastReset(pos);
+
+    posDelta.zero();
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastPosReset_ms = pos_reset_data.last_primary_change;
+
+    // There has been a change in the primary core that the controller has not consumed
+    // allow for multiple consumers on the same frame
+    if (pos_reset_data.core_changed || pos_reset_data.last_function_call == now_time_ms) {
+        posDelta = pos_reset_data.core_delta;
+        pos_reset_data.core_changed = false;
+    }
+
+    // Record last time controller got the position reset
+    pos_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
+    Vector2f tempPosDelta;
+    uint32_t lastCorePosReset_ms = core[primary].getLastPosNorthEastReset(tempPosDelta);
+    if (lastCorePosReset_ms > lastPosReset_ms) {
+        posDelta = posDelta + tempPosDelta;
+        lastPosReset_ms = lastCorePosReset_ms;
+    }
+
+    return lastPosReset_ms;
 }
 
 // return the amount of NE velocity change due to the last velocity reset in metres/sec
@@ -1234,6 +1270,122 @@ const char *NavEKF2::prearm_failure_reason(void) const
         return nullptr;
     }
     return core[primary].prearm_failure_reason();
+}
+
+// Returns the amount of vertical position change due to the last reset or core switch in metres
+// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
+uint32_t NavEKF2::getLastPosDownReset(float &posDelta)
+{
+    if (!core) {
+        return 0;
+    }
+
+    posDelta = 0.0f;
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastPosReset_ms = pos_down_reset_data.last_primary_change;
+
+    // There has been a change in the primary core that the controller has not consumed
+    // allow for multiple consumers on the same frame
+    if (pos_down_reset_data.core_changed || pos_down_reset_data.last_function_call == now_time_ms) {
+        posDelta = pos_down_reset_data.core_delta;
+        pos_down_reset_data.core_changed = false;
+    }
+
+    // Record last time controller got the position reset
+    pos_down_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
+    float tempPosDelta;
+    uint32_t lastCorePosReset_ms = core[primary].getLastPosDownReset(tempPosDelta);
+    if (lastCorePosReset_ms > lastPosReset_ms) {
+        posDelta += tempPosDelta;
+        lastPosReset_ms = lastCorePosReset_ms;
+    }
+
+    return lastPosReset_ms;
+}
+
+// update the yaw reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary)
+{
+    Vector3f eulers_old_primary, eulers_new_primary;
+    float old_yaw_delta;
+
+    // If core yaw reset data has been consumed reset delta to zero
+    if (!yaw_reset_data.core_changed) {
+        yaw_reset_data.core_delta = 0;
+    }
+
+    // If current primary has reset yaw after controller got it, add it to the delta
+    if (core[old_primary].getLastYawResetAngle(old_yaw_delta) > yaw_reset_data.last_function_call) {
+        yaw_reset_data.core_delta += old_yaw_delta;
+    }
+
+    // Record the yaw delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getEulerAngles(eulers_old_primary);
+    core[new_primary].getEulerAngles(eulers_new_primary);
+    yaw_reset_data.core_delta = wrap_PI(eulers_new_primary.z - eulers_old_primary.z + yaw_reset_data.core_delta);
+    yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    yaw_reset_data.core_changed = true;
+
+}
+
+// update the position reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
+{
+    Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
+
+    // If core position reset data has been consumed reset delta to zero
+    if (!pos_reset_data.core_changed) {
+        pos_reset_data.core_delta.zero();
+    }
+
+    // If current primary has reset position after controller got it, add it to the delta
+    if (core[old_primary].getLastPosNorthEastReset(old_pos_delta) > pos_reset_data.last_function_call) {
+        pos_reset_data.core_delta += old_pos_delta;
+    }
+
+    // Record the position delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getPosNE(pos_old_primary);
+    core[new_primary].getPosNE(pos_new_primary);
+    pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
+    pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    pos_reset_data.core_changed = true;
+
+}
+
+// Update the vertical position reset data to capture changes due to a core switch
+// This should be called after the decision to switch cores has been made, but before the
+// new primary EKF update has been run
+void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
+{
+    float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
+
+    // If core position reset data has been consumed reset delta to zero
+    if (!pos_down_reset_data.core_changed) {
+        pos_down_reset_data.core_delta = 0.0f;
+    }
+
+    // If current primary has reset position after controller got it, add it to the delta
+    if (core[old_primary].getLastPosDownReset(oldPosDownDelta) > pos_down_reset_data.last_function_call) {
+        pos_down_reset_data.core_delta += oldPosDownDelta;
+    }
+
+    // Record the position delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getPosD(posDownOldPrimary);
+    core[new_primary].getPosD(posDownNewPrimary);
+    pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
+    pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    pos_down_reset_data.core_changed = true;
+
 }
 
 #endif //HAL_CPU_CLASS

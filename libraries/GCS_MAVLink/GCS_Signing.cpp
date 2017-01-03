@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   Code for handling MAVLink2 signing
 
@@ -119,7 +117,6 @@ void GCS_MAVLINK::load_signing_key(void)
 {
     struct SigningKey key;
     if (!signing_key_load(key)) {
-        hal.console->printf("Failed to load signing key");
         return;
     }
     mavlink_status_t *status = mavlink_get_channel_status(chan);

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -546,7 +544,7 @@ void VRBRAINRCOutput::push()
 
 void VRBRAINRCOutput::_timer_tick(void)
 {
-    if (_output_mode != MODE_PWM_ONESHOT) {
+    if (_output_mode != MODE_PWM_ONESHOT && !_corking) {
         /* in oneshot mode the timer does nothing as the outputs are
          * sent from push() */
         _send_outputs();

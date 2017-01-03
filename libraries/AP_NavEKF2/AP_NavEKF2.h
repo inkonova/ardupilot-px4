@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   24 state EKF based on https://github.com/priseborough/InertialNav
   Converted from Matlab to C++ by Paul Riseborough
@@ -268,17 +267,21 @@ public:
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
+    // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAngDelta);
 
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
+    uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
 
     // return the amount of NE velocity change due to the last velocity reset in metres/sec
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
+
+    // return the amount of vertical position change due to the last reset in metres
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    uint32_t getLastPosDownReset(float &posDelta);
 
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
@@ -380,14 +383,40 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
-
-    // used to keep track of yaw angle steps due to change of primary instance or internal ekf yaw resets
+    
     struct {
-        uint8_t prev_instance;          // active core number from the previous time step
-        uint32_t last_ekf_reset_ms;     // last time the active ekf performed a yaw reset (msec)
-        uint32_t last_lane_switch_ms;   // last time there was a lane switch (msec)
-        uint32_t yaw_reset_time_ms;     // last time a yaw reset event was published
-        float yaw_delta;                // the amount of yaw change due to the last published yaw step (rad)
-        float prev_yaw;                 // yaw angle published by the active core from the previous time step (rad)
-    } yaw_step_data;
+        uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
+        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
+        uint32_t last_primary_change; // last time a primary has changed
+        float core_delta;             // the amount of yaw change between cores when a change happened
+    } yaw_reset_data;
+
+    struct {
+        uint32_t last_function_call;  // last time getLastPosNorthEastReset was called
+        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
+        uint32_t last_primary_change; // last time a primary has changed
+        Vector2f core_delta;          // the amount of NE position change between cores when a change happened
+    } pos_reset_data;
+
+    struct {
+        uint32_t last_function_call;  // last time getLastPosDownReset was called
+        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
+        uint32_t last_primary_change; // last time a primary has changed
+        float core_delta;             // the amount of D position change between cores when a change happened
+    } pos_down_reset_data;
+
+    // update the yaw reset data to capture changes due to a lane switch
+    // new_primary - index of the ekf instance that we are about to switch to as the primary
+    // old_primary - index of the ekf instance that we are currently using as the primary
+    void updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary);
+
+    // update the position reset data to capture changes due to a lane switch
+    // new_primary - index of the ekf instance that we are about to switch to as the primary
+    // old_primary - index of the ekf instance that we are currently using as the primary
+    void updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary);
+
+    // update the position down reset data to capture changes due to a lane switch
+    // new_primary - index of the ekf instance that we are about to switch to as the primary
+    // old_primary - index of the ekf instance that we are currently using as the primary
+    void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 };

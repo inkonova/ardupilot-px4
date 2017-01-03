@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
@@ -384,7 +383,6 @@ Compass::Compass(void) :
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
         _state[i].last_update_usec = 0;
-        _reports_sent[i] = 0;
     }
 
     // default device ids to zero.  init() method will overwrite with the actual device ids
@@ -492,10 +490,10 @@ void Compass::_detect_backends(void)
                      true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO2
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
-                 AP_Compass_AK8963::name, false);
     _add_backend(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")),
                  AP_Compass_LSM9DS1::name, false);
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+                 AP_Compass_AK8963::name, false);
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO

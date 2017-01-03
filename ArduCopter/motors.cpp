@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
@@ -131,6 +129,11 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         return false;
     }
     in_arm_motors = true;
+
+    // return true if already armed
+    if (motors.armed()) {
+        return true;
+    }
 
     // run pre-arm-checks and display failures
     if (!all_arming_checks_passing(arming_from_gcs)) {

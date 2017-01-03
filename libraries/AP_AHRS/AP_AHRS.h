@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /*
@@ -85,6 +84,10 @@ public:
         _home.alt        = 0;
         _home.lng        = 0;
         _home.lat        = 0;
+
+        _last_trim = _trim.get();
+        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
     }
 
     // empty virtual destructor
@@ -240,6 +243,8 @@ public:
     // return a DCM rotation matrix representing our current
     // attitude
     virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
+    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
+    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
@@ -433,12 +438,26 @@ public:
         return 0;
     };
 
+    // return the amount of vertical position change due to the last reset in meters
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastPosDownReset(float &posDelta) const {
+        return 0;
+    };
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
     virtual bool resetHeightDatum(void) {
+        return false;
+    }
+    
+    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
+    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accpeted by the filter
+    // boolean false is returned if variances are not available
+    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const {
         return false;
     }
     
@@ -449,6 +468,9 @@ public:
     int8_t get_ekf_type(void) const {
         return _ekf_type;
     }
+
+    // Retrieves the corrected NED delta velocity in use by the inertial navigation
+    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const { ret.zero(); _ins.get_delta_velocity(ret); dt = _ins.get_delta_velocity_dt(); }
     
 protected:
     AHRS_VehicleClass _vehicle_class;
@@ -502,6 +524,11 @@ protected:
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
+
+    // cached trim rotations
+    Vector3f _last_trim;
+    Matrix3f _rotation_autopilot_body_to_vehicle_body;
+    Matrix3f _rotation_vehicle_body_to_autopilot_body;
 
     // the limit of the gyro drift claimed by the sensors, in
     // radians/s/s

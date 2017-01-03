@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -95,6 +93,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(auto_disarm_check,     10,     50),
     SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(read_rangefinder,      20,    100),
+    SCHED_TASK(update_proximity,     100,     50),
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
@@ -264,8 +263,8 @@ void Copter::fast_loop()
     // --------------------
     read_inertia();
 
-    // check if ekf has reset target heading
-    check_ekf_yaw_reset();
+    // check if ekf has reset target heading or position
+    check_ekf_reset();
 
     // run the attitude controllers
     update_flight_mode();
@@ -397,14 +396,14 @@ void Copter::ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control.control_monitor_log();
+        Log_Write_Proximity();
     }
 #if FRAME_CONFIG == HELI_FRAME
     Log_Write_Heli();
 #endif
 }
 
-// fifty_hz_logging_loop
-// should be run at 50hz
+// twentyfive_hz_logging - should be run at 25hz
 void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED

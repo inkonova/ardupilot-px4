@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -41,25 +39,17 @@ bool NavEKF2_core::healthy(void) const
     return true;
 }
 
-// Return a consolidated fault score where higher numbers are less healthy
+// Return a consolidated error score where higher numbers represent larger errors
 // Intended to be used by the front-end to determine which is the primary EKF
-float NavEKF2_core::faultScore(void) const
+float NavEKF2_core::errorScore() const
 {
     float score = 0.0f;
-    // If velocity, position or height measurements are failing consistency checks, this adds to the score
-    if (velTestRatio > 1.0f) {
-        score += velTestRatio-1.0f;
-    }
-    if (posTestRatio > 1.0f) {
-        score += posTestRatio-1.0f;
-    }
-    if (hgtTestRatio > 1.0f) {
-        score += hgtTestRatio-1.0f;
-    }
-    // If the tilt error is excessive this adds to the score
-    const float tiltErrThreshold = 0.05f;
-    if (tiltAlignComplete && yawAlignComplete && tiltErrFilt > tiltErrThreshold) {
-        score += tiltErrFilt / tiltErrThreshold;
+    if (tiltAlignComplete && yawAlignComplete) {
+        score = MAX(score, velTestRatio);
+        score = MAX(score, posTestRatio);
+        score = MAX(score, hgtTestRatio);
+        const float tiltErrThreshold = 0.05f;
+        score = MAX(score, tiltErrFilt / tiltErrThreshold);
     }
     return score;
 }
@@ -136,9 +126,8 @@ void NavEKF2_core::getTiltError(float &ang) const
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
-    Vector3f trim = _ahrs->get_trim();
     outputDataNew.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
+    mat = mat * _ahrs->get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
@@ -161,6 +150,14 @@ uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
 {
     pos = posResetNE;
     return lastPosReset_ms;
+}
+
+// return the amount of vertical position change due to the last vertical position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastPosDownReset(float &posD) const
+{
+    posD = posResetD;
+    return lastPosResetD_ms;
 }
 
 // return the amount of NE velocity change due to the last velocity reset in metres/sec
@@ -520,8 +517,18 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 
+    // Only report range finder normalised innovation levels if the EKF needs the data for primary
+    // height estimation or optical flow operation. This prevents false alarms at the GCS if a
+    // range finder is fitted for other applications
+    float temp;
+    if ((frontend->_useRngSwHgt > 0) || PV_AidingMode == AID_RELATIVE || flowDataValid) {
+        temp = sqrtf(auxRngTestRatio);
+    } else {
+        temp = 0.0f;
+    }
+
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), sqrtf(auxRngTestRatio));
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), temp);
 
 }
 

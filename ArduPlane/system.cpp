@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 #include "version.h"
 
@@ -118,6 +116,8 @@ void Plane::init_ardupilot()
 
     GCS_MAVLINK::set_dataflash(&DataFlash);
 
+    mavlink_system.sysid = g.sysid_this_mav;
+
     // initialise serial ports
     serial_manager.init();
     gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
@@ -160,10 +160,10 @@ void Plane::init_ardupilot()
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager);
+    frsky_telemetry.init(serial_manager, FIRMWARE_STRING,
+                         MAV_TYPE_FIXED_WING,
+                         &g.fs_batt_voltage, &g.fs_batt_mah);
 #endif
-
-    mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
     log_init();

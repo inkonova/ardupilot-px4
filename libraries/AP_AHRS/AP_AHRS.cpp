@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   APM_AHRS.cpp
 
@@ -230,6 +229,12 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 //      should be called after _dcm_matrix is updated
 void AP_AHRS::update_trig(void)
 {
+    if (_last_trim != _trim.get()) {
+        _last_trim = _trim.get();
+        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
+    }
+
     Vector2f yaw_vector;
     const Matrix3f &temp = get_rotation_body_to_ned();
 

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "GCS_Mavlink.h"
 
 #include "Tracker.h"
@@ -188,7 +186,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         break;
 
     case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_radio_in(0);
         break;
 
@@ -241,12 +239,10 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_hwstatus(chan);
         break;
     case MSG_MAG_CAL_PROGRESS:
-        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
         tracker.compass.send_mag_cal_progress(chan);
         break;
 
     case MSG_MAG_CAL_REPORT:
-        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
         tracker.compass.send_mag_cal_report(chan);
         break;
 
@@ -523,7 +519,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     switch (msg->msgid) {
 
     // If we are currently operating as a proxy for a remote, 
-    // alas we have to look inside each packet to see if its for us or for the remote
+    // alas we have to look inside each packet to see if it's for us or for the remote
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
     {
         handle_request_data_stream(msg, false);
@@ -863,6 +859,11 @@ mission_failed:
 
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_gps_inject(msg, tracker.gps);
+        break;
+
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
+    case MAVLINK_MSG_ID_GPS_INPUT:
+        tracker.gps.handle_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:

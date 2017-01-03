@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   Common GCS MAVLink functions for all vehicle types
 
@@ -126,6 +124,8 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
             // if signing is off start by sending MAVLink1.
             status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
+        // announce that we are MAVLink2 capable
+        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MAVLINK2);
     } else if (status) {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
@@ -934,7 +934,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     // this message id might already be deferred
     for (i=0, nextid = next_deferred_message; i < num_deferred_messages; i++) {
         if (deferred_messages[nextid] == id) {
-            // its already deferred, discard
+            // it's already deferred, discard
             return;
         }
         nextid++;
@@ -983,7 +983,8 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     if (msg_snoop != NULL) {
         msg_snoop(&msg);
     }
-    if (routing.check_and_forward(chan, &msg)) {
+    if (routing.check_and_forward(chan, &msg) &&
+        accept_packet(status, msg)) {
         handleMessage(&msg);
     }
 }
@@ -1094,20 +1095,41 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
 
 
 /*
-  send RC_CHANNELS_RAW, and RC_CHANNELS messages
+  send RC_CHANNELS messages
  */
 void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
 {
     uint32_t now = AP_HAL::millis();
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
 
-    uint16_t values[8];
+    uint16_t values[18];
     memset(values, 0, sizeof(values));
-    hal.rcin->read(values, 8);
+    hal.rcin->read(values, 18);
 
-    mavlink_msg_rc_channels_raw_send(
+    if (status && (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+        // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD implementations
+        mavlink_msg_rc_channels_raw_send(
+            chan,
+            now,
+            0,
+            values[0],
+            values[1],
+            values[2],
+            values[3],
+            values[4],
+            values[5],
+            values[6],
+            values[7],
+            receiver_rssi);
+        if (!HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
+            // can't fit RC_CHANNELS
+            return;
+        }
+    }
+    mavlink_msg_rc_channels_send(
         chan,
         now,
-        0, // port
+        hal.rcin->num_channels(),
         values[0],
         values[1],
         values[2],
@@ -1116,33 +1138,17 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
         values[5],
         values[6],
         values[7],
-        receiver_rssi);
-
-    if (hal.rcin->num_channels() > 8 && HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
-        mavlink_msg_rc_channels_send(
-            chan,
-            now,
-            hal.rcin->num_channels(),
-            hal.rcin->read(CH_1),
-            hal.rcin->read(CH_2),
-            hal.rcin->read(CH_3),
-            hal.rcin->read(CH_4),
-            hal.rcin->read(CH_5),
-            hal.rcin->read(CH_6),
-            hal.rcin->read(CH_7),
-            hal.rcin->read(CH_8),
-            hal.rcin->read(CH_9),
-            hal.rcin->read(CH_10),
-            hal.rcin->read(CH_11),
-            hal.rcin->read(CH_12),
-            hal.rcin->read(CH_13),
-            hal.rcin->read(CH_14),
-            hal.rcin->read(CH_15),
-            hal.rcin->read(CH_16),
-            hal.rcin->read(CH_17),
-            hal.rcin->read(CH_18),
-            receiver_rssi);        
-    }
+        values[8],
+        values[9],
+        values[10],
+        values[11],
+        values[12],
+        values[13],
+        values[14],
+        values[15],
+        values[16],
+        values[17],
+        receiver_rssi);        
 }
 
 void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
@@ -1776,4 +1782,19 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_UNSUPPORTED;
+}
+
+
+/*
+  handle a R/C bind request (for spektrum)
+ */
+uint8_t GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
+{
+    // initiate bind procedure. We accept the DSM type from either
+    // param1 or param2 due to a past mixup with what parameter is the
+    // right one
+    if (!hal.rcin->rc_bind(packet.param2>0?packet.param2:packet.param1)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
 }

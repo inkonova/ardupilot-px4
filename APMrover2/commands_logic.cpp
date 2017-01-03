@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Rover.h"
 
 /********************************************************************************/
@@ -146,10 +144,15 @@ bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
     }
     return false;
 }
-/********************************************************************************/
-// Verify command Handlers
-//      Returns true if command complete
-/********************************************************************************/
+
+/*******************************************************************************
+Verify command Handlers
+
+Each type of mission element has a "verify" operation. The verify
+operation returns true when the mission element has completed and we
+should move onto the next mission element.
+Return true if we do not recognize the command so that we move on to the next command
+*******************************************************************************/
 
 bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -170,15 +173,28 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
         case MAV_CMD_CONDITION_DISTANCE:
             return verify_within_distance();
 
+        // do commands (always return true)
+        case MAV_CMD_DO_CHANGE_SPEED:
+        case MAV_CMD_DO_SET_HOME:
+        case MAV_CMD_DO_SET_SERVO:
+        case MAV_CMD_DO_SET_RELAY:
+        case MAV_CMD_DO_REPEAT_SERVO:
+        case MAV_CMD_DO_REPEAT_RELAY:
+        case MAV_CMD_DO_CONTROL_VIDEO:
+        case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        case MAV_CMD_DO_DIGICAM_CONTROL:
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        case MAV_CMD_DO_SET_ROI:
+        case MAV_CMD_DO_SET_REVERSE:
+            return true;
+
         default:
-            if (cmd.id > MAV_CMD_CONDITION_LAST) {
-                // this is a command that doesn't require verify
-                return true;
-            }
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Verify condition. Unsupported command");
+            // error message
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+            // return true if we do not recognize the command so that we move on to the next command
             return true;
 	}
-    return false;
+
 }
 
 /********************************************************************************/
@@ -289,6 +305,29 @@ bool Rover::verify_loiter_unlim()
     // Continually increase the loiter time so it never finishes
     loiter_time += loiter_time_max;
     return false;
+}
+
+void Rover::nav_set_yaw_speed()
+{
+    // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
+    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000)
+    {
+        gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
+        channel_throttle->set_servo_out(g.throttle_min.get());
+        channel_steer->set_servo_out(0);
+        lateral_acceleration = 0;
+        return;
+    }
+
+    channel_steer->set_servo_out(steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle));
+
+    // speed param in the message gives speed as a proportion of cruise speed.
+    // 0.5 would set speed to the cruise speed
+    // 1 is double the cruise speed.
+    float target_speed = g.speed_cruise * guided_yaw_speed.target_speed * 2;
+    calc_throttle(target_speed);
+
+    return;
 }
 
 /********************************************************************************/

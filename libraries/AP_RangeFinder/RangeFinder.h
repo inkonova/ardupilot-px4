@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -48,7 +47,8 @@ public:
         RangeFinder_TYPE_LWI2C  = 7,
         RangeFinder_TYPE_LWSER  = 8,
         RangeFinder_TYPE_BEBOP  = 9,
-        RangeFinder_TYPE_MAVLink = 10
+        RangeFinder_TYPE_MAVLink = 10,
+        RangeFinder_TYPE_LEDDARONE = 12
     };
 
     enum RangeFinder_Function {

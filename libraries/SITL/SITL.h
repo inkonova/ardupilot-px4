@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -49,7 +47,8 @@ public:
         GPS_TYPE_MTK19 = 4,
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SBP   = 6,
-        GPS_TYPE_FILE  = 7
+        GPS_TYPE_FILE  = 7,
+        GPS_TYPE_NOVA  = 8,
     };
 
     struct sitl_fdm state;
@@ -78,7 +77,7 @@ public:
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp
     AP_Vector3f mag_ofs;  // in mag units
-    AP_Float servo_rate;  // servo speed in degrees/second
+    AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
@@ -105,6 +104,7 @@ public:
     AP_Int8  flow_delay; // optflow data delay
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int8  pin_mask; // for GPIO emulation
+    AP_Float speedup; // simulation speedup
 
     // wind control
     float wind_speed_active;

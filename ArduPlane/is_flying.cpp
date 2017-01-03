@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -155,6 +153,9 @@ void Plane::update_is_flying_5Hz(void)
     }
     previous_is_flying = new_is_flying;
     adsb.set_is_flying(new_is_flying);
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.set_is_flying(new_is_flying);
+#endif
 
     crash_detection_update();
 

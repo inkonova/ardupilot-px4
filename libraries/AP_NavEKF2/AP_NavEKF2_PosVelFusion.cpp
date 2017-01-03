@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -101,6 +99,9 @@ void NavEKF2_core::ResetPosition(void)
 // reset the vertical position state using the last height measurement
 void NavEKF2_core::ResetHeight(void)
 {
+    // Store the position before the reset so that we can record the reset delta
+    posResetD = stateStruct.position.z;
+
     // write to the state vector
     stateStruct.position.z = -hgtMea;
     outputDataNew.position.z = stateStruct.position.z;
@@ -117,6 +118,12 @@ void NavEKF2_core::ResetHeight(void)
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.z = stateStruct.position.z;
     }
+
+    // Calculate the position jump due to the reset
+    posResetD = stateStruct.position.z - posResetD;
+
+    // store the time of the reset
+    lastPosResetD_ms = imuSampleTime_ms;
 
     // reset the corresponding covariances
     zeroRows(P,8,8);

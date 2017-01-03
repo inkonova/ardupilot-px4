@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 #include "version.h"
 
@@ -143,6 +141,11 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (copter.DataFlash.logging_present()) { // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
+#if PROXIMITY_ENABLED == ENABLED
+    if (copter.g2.proximity.get_status() > AP_Proximity::Proximity_NotConnected) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
@@ -151,7 +154,6 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
                                                          ~MAV_SYS_STATUS_LOGGING);
 
     switch (control_mode) {
-    case ALT_HOLD:
     case AUTO:
     case AVOID_ADSB:
     case GUIDED:
@@ -161,13 +163,18 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     case LAND:
     case POSHOLD:
     case BRAKE:
+    case THROW:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
+    case ALT_HOLD:
+    case GUIDED_NOGPS:
     case SPORT:
+    case AUTOTUNE:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
+        // stabilize, acro, drift, and flip have no automatic x,y or z control (i.e. all manual)
         break;
     }
 
@@ -221,6 +228,12 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (copter.DataFlash.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
+
+#if PROXIMITY_ENABLED == ENABLED
+    if (copter.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -278,7 +291,7 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
-    uint32_t sensors_error_flags = (control_sensors_health ^ control_sensors_enabled) & control_sensors_present;
+    uint32_t sensors_error_flags = (~control_sensors_health) & control_sensors_enabled & control_sensors_present;
     frsky_telemetry.update_sensor_status_flags(sensors_error_flags);
 #endif
     
@@ -564,7 +577,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_radio_in(copter.receiver_rssi);
         break;
 
@@ -758,7 +771,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: RC_CHAN
     // @DisplayName: RC Channel stream rate to ground station
-    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS_RAW to ground station
+    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -1094,6 +1107,20 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_STATUSTEXT:
+    {
+        // ignore any statustext messages not from our GCS:
+        if (msg->sysid != copter.g.sysid_my_gcs) {
+            break;
+        }
+        mavlink_statustext_t packet;
+        mavlink_msg_statustext_decode(msg, &packet);
+        char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+4] = { 'G','C','S',':'};
+        memcpy(&text[4], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+        copter.DataFlash.Log_Write_Message(text);
+        break;
+    }
+
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     {
 #if MOUNT == ENABLED
@@ -1176,12 +1203,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         switch(packet.command) {
 
         case MAV_CMD_START_RX_PAIR:
-            // initiate bind procedure
-            if (!hal.rcin->rc_bind(packet.param1)) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-            }
+            result = handle_rc_bind(packet);
             break;
 
         case MAV_CMD_NAV_TAKEOFF: {
@@ -1870,6 +1892,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
     {
       result = MAV_RESULT_ACCEPTED;
@@ -2228,4 +2251,18 @@ void Copter::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+}
+
+/*
+  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+ */
+bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
+{
+    if (!copter.g2.sysid_enforce) {
+        return true;
+    }
+    if (msg.msgid == MAVLINK_MSG_ID_RADIO || msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+        return true;
+    }
+    return (msg.sysid == copter.g.sysid_my_gcs);
 }
