@@ -2,6 +2,7 @@
 
 #pragma once
 
+#if 0
 #include "AP_MotorsQuad.h"
 
 /// @class      AP_MotorsQuadTilt
@@ -34,4 +35,4 @@ private:
 	AP_Int16 _servo_travel; 
 };
 
-
+#endif

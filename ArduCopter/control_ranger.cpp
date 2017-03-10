@@ -358,7 +358,7 @@ void Copter::control_ranger_run()
 		range_avoid.reset(); 
 	}
 
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
+//#if FRAME_CONFIG == QUAD_PTILT_FRAME
 	float cosAngle = cos(radians(target_pitch * 0.01)); 
 
 	float rollComp = target_roll * cosAngle;
@@ -382,7 +382,7 @@ void Copter::control_ranger_run()
 
 	// zero the target_pitch because we will be handling forward movement using motor tilt
 	//target_pitch = 0; 
-#endif
+//#endif
 
     //attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, bodyTilt * 100, target_yaw_rate, get_smoothing_gain());
 

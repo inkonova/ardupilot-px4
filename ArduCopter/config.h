@@ -62,6 +62,7 @@
 //
 
 // undefine frame config and force it to our frame
+/*
 #ifdef FRAME_CONFIG
 #undef FRAME_CONFIG
 #endif
@@ -69,6 +70,7 @@
 #ifndef FRAME_CONFIG
  # define FRAME_CONFIG   QUAD_PTILT_FRAME
 #endif
+*/
 
 #if FRAME_CONFIG == QUAD_FRAME
  # define FRAME_CONFIG_STRING "QUAD"
@@ -84,6 +86,8 @@
  # define FRAME_CONFIG_STRING "OCTA"
 #elif FRAME_CONFIG == OCTA_QUAD_FRAME
  # define FRAME_CONFIG_STRING "OCTA_QUAD"
+#elif FRAME_CONFIG == OCTA_QUAD_PTILT_FRAME
+ # define FRAME_CONFIG_STRING "OCTA_QUAD_PTILT"
 #elif FRAME_CONFIG == HELI_FRAME
  # define FRAME_CONFIG_STRING "HELI"
 #elif FRAME_CONFIG == SINGLE_FRAME

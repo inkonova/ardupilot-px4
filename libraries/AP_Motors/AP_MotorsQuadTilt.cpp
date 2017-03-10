@@ -15,6 +15,7 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if 0
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsQuadTilt.h"
 
@@ -55,7 +56,6 @@ void AP_MotorsQuadTilt::setup_motors(){
     AP_MotorsQuad::setup_motors();
 }
 
-#include <stdio.h>
 void AP_MotorsQuadTilt::output(){
 	float servo_scale = (constrain_float(_servo_travel, 0, 90) / 90.0f); // 0.0 - 1.0. 
 	float tilt_pitch = _tilt_pitch * 2.0f; 
@@ -79,4 +79,4 @@ void AP_MotorsQuadTilt::output(){
 void AP_MotorsQuadTilt::output_to_servos(){
 	// no longer used
 }
-	
+#endif

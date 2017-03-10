@@ -125,7 +125,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
             status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
         // announce that we are MAVLink2 capable
-        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MAVLINK2);
+        //hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MAVLINK2);
     } else if (status) {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;

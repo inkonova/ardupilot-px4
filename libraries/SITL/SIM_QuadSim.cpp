@@ -84,6 +84,19 @@ bool QuadSim::start_sim(void){
 	if (pipe(p) != 0) {
 		AP_HAL::panic("Unable to create pipe");
 	}
+
+	// setup shared memory!
+
+	int out = shmget(9003, sizeof(struct server_packet), 0666); 
+	if(out < 0) perror("shmget"); 
+	int in = shmget(9005, sizeof(struct client_packet), 0666); 
+	if(in < 0) perror("shmget"); 
+
+	_shmin = (char*)shmat(in, NULL, 0); 
+	_shmout = (char*)shmat(out, NULL, 0); 
+
+	memset(_shmin, 0, sizeof(struct client_packet)); 
+
 	pid_t child_pid = fork();
 	if (child_pid == 0) {
 		// in child
@@ -109,6 +122,8 @@ bool QuadSim::start_sim(void){
 	close(p[1]);
 	quadsim_stdout = p[0];
 
+	sleep(1); 
+	/*
 	// read startup to be sure it is running
 	char c;
 	if (read(quadsim_stdout, &c, 1) != 1) {
@@ -117,23 +132,11 @@ bool QuadSim::start_sim(void){
 
     if (!_expect(quadsim_stdout, "Irrlicht Engine version")) {
         AP_HAL::panic("Failed to start QuadSim");
-    }
+    }*/
 
 	fcntl(quadsim_stdout, F_SETFL, fcntl(quadsim_stdout, F_GETFL, 0) | O_NONBLOCK);
 
 	close(devnull);
-
-	// setup shared memory!
-
-	int out = shmget(9003, sizeof(struct server_packet), 0666); 
-	if(out < 0) perror("shmget"); 
-	int in = shmget(9005, sizeof(struct client_packet), 0666); 
-	if(in < 0) perror("shmget"); 
-
-	_shmin = (char*)shmat(in, NULL, 0); 
-	_shmout = (char*)shmat(out, NULL, 0); 
-
-	memset(_shmin, 0, sizeof(struct client_packet)); 
 
 	return true;
 }

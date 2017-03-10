@@ -21,6 +21,37 @@
 
 #include "AP_MotorsQuad.h"
 
+extern const AP_HAL::HAL& hal;
+
+const AP_Param::GroupInfo AP_MotorsQuad::var_info[] = {
+	// @Param: TILT_SERVO_ON
+    // @DisplayName: Turms the tilt servo on or off
+    // @Description: If off, then servo is centered
+    // @Range: 0 1
+    // @Increment: 1
+
+	AP_GROUPINFO("ON", 0, AP_MotorsQuad, _servo_on, 1),
+
+	// @Param: TILT_SERVO_CHANNEL
+    // @DisplayName: Channel for the tilt servo
+    // @Description: Tilt servo signal will go on this channel (use values starting from 1!)
+    // @Range: 1 32
+    // @Increment: 1
+
+	AP_GROUPINFO("CHANNEL", 1, AP_MotorsQuad, _servo_channel, AP_MOTORS_MAX_NUM_MOTORS), 
+
+	// @Param: TILT_SERVO_TRAVEL
+    // @DisplayName: Tilt servo travel in degrees in each direction
+    // @Description: Specifies how far tilt servo is allowed to move
+    // @Range: 0 90
+    // @Increment: 1
+
+	AP_GROUPINFO("TRAVEL", 2, AP_MotorsQuad, _servo_travel, 45),
+
+	AP_GROUPEND
+}; 
+
+
 // setup_motors - configures the motors for a quad
 void AP_MotorsQuad::setup_motors()
 {
@@ -106,5 +137,24 @@ void AP_MotorsQuad::setup_motors()
 }
 
 void AP_MotorsQuad::output(){
+	// NOTE: all of this is really crappy and hardcoded. Just to make it work quick...
+
+	float servo_scale = (constrain_float(_servo_travel, 0, 90) / 90.0f); // 0.0 - 1.0. 
+	float tilt_pitch = _tilt_pitch * 2.0f; 
+	uint16_t servo_pwm = constrain_int16(1500 + 500 * constrain_float(tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
+	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
+
+	if(_servo_on && _servo_channel > 0){
+		rc_write(_servo_channel + 1, servo_pwm); 
+		rc_write(_servo_channel + 2, inv_servo_pwm); 
+	} else {
+		// center servo
+		rc_write(_servo_channel + 1, 1500); 
+		rc_write(_servo_channel + 2, 1500); 
+	}
+
+	// radio passthrough (ref: camera switch)
+	rc_write(_servo_channel + 3, hal.rcin->read(4)); 
+
 	AP_MotorsMatrix::output(); 
 }

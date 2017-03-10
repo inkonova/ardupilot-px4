@@ -357,7 +357,7 @@ private:
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
 #elif FRAME_CONFIG == QUAD_PTILT_FRAME
- #define MOTOR_CLASS AP_MotorsQuadTilt
+ #define MOTOR_CLASS AP_MotorsQuad
 #elif FRAME_CONFIG == TRI_FRAME
  #define MOTOR_CLASS AP_MotorsTri
 #elif FRAME_CONFIG == HEXA_FRAME

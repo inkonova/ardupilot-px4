@@ -72,11 +72,12 @@ Copter::Copter(void) :
     condition_start(0),
     G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
-#if FRAME_CONFIG == QUAD_PTILT_FRAME
+// NOTE: this permanently puts our firmware into tilt mode
+//#if FRAME_CONFIG == QUAD_PTILT_FRAME
     attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS, true),
-#else
-    attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS, false),
-#endif
+//#else
+//   attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS, false),
+//#endif
     pos_control(ahrs, inertial_nav, motors, attitude_control,
                 g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                 g.p_pos_xy, g.pi_vel_xy),
