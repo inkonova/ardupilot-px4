@@ -256,6 +256,7 @@ void Copter::fast_loop()
     update_heli_control_dynamics();
 #endif //HELI_FRAME
 
+
     // send outputs to the motors library
     motors_output();
 
@@ -295,14 +296,19 @@ void Copter::rc_loop()
     // -----------------------------------------
     read_radio();
     read_control_switch();
+
 }
 
 // throttle_loop - should be run at 50 hz
 // ---------------------------
 void Copter::throttle_loop()
 {
-    // update throttle_low_comp value (controls priority of throttle vs attitude control)
-    update_throttle_thr_mix();
+	if((hal.rcin->read(5)) > 1500){
+		init_disarm_motors();
+	}
+
+	// update throttle_low_comp value (controls priority of throttle vs attitude control)
+	update_throttle_thr_mix();
 
     // check auto_armed status
     update_auto_armed();
@@ -406,6 +412,7 @@ void Copter::ten_hz_logging_loop()
 // twentyfive_hz_logging - should be run at 25hz
 void Copter::twentyfive_hz_logging()
 {
+
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
     gcs_send_message(MSG_RADIO_OUT);
