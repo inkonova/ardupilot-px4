@@ -237,10 +237,10 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
-	if(_tilt_frame){
-		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01; 
-		euler_pitch_angle = 0; 
-	}
+//	if(_tilt_frame){
+//		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01;
+//		euler_pitch_angle = 0;
+//	}
 
     // ensure smoothing gain can not cause overshoot
     smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);

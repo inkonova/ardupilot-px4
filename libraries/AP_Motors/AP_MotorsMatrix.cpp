@@ -282,27 +282,15 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 //        }
 //    }
 
-    //This is shitty as f*ck, should do individual checking...
-    float aTemp  =  throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[0];
-
-    if(calc_thrust_to_pwm(aTemp) > 1400 && _firstFlag ){
-    	_quad_thr = thr_adj;
-    	_firstFlag = false;
-    }else if(calc_thrust_to_pwm(aTemp) < 1400){
-    	_quad_thr = thr_adj,
-    	_firstFlag = true;
-    }
-
-    // add scaled roll, pitch, constrained yaw and throttle for each motor
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-        	if(i < 4){
-        		_thrust_rpyt_out[i] = throttle_thrust_best_rpy + _quad_thr + rpy_scale*_thrust_rpyt_out[i];
-        	}else{
-        		_thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[i];
-        	}
-        }
-    }
+	for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+		if (motor_enabled[i]) {
+			if(i < 4){
+				_thrust_rpyt_out[i] = 0.5f*throttle_thrust_best_rpy + 0.5f*thr_adj + rpy_scale*_thrust_rpyt_out[i];
+			}else{
+				_thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[i];
+			}
+		}
+	}
 
     // constrain all outputs to 0.0f to 1.0f
     // test code should be run with these lines commented out as they should not do anything

@@ -132,8 +132,8 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
 
         // This is for the UFO Build,
-        add_motor_raw(AP_MOTORS_MOT_5, 0.0f, 0.0f, 1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW);
-        add_motor_raw(AP_MOTORS_MOT_6, 0.0f, 0.0f, -1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW);
+        add_motor_raw(AP_MOTORS_MOT_5, 0.0f, 0.0f, 0.0f, 5);
+        add_motor_raw(AP_MOTORS_MOT_6, 0.0f, 0.0f, 0.0f, 6);
     }
 
     // normalise factors to magnitude 0.5

@@ -82,5 +82,5 @@ protected:
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
 
     bool 				_firstFlag = true;
-    float 				_quad_thr;
 };
+
