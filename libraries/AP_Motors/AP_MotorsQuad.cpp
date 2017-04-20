@@ -140,17 +140,17 @@ void AP_MotorsQuad::output(){
 	// NOTE: all of this is really crappy and hardcoded. Just to make it work quick...
 
 	float servo_scale = (constrain_float(_servo_travel, 0, 90) / 90.0f); // 0.0 - 1.0. 
-	float tilt_pitch = _tilt_pitch * 3.0f;
+	float tilt_pitch = _tilt_pitch * 2.0f;
 	uint16_t servo_pwm = constrain_int16(1500 + 500 * constrain_float(tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
 	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
 
 	if(_servo_on && _servo_channel > 0){
-		rc_write(_servo_channel + 2, servo_pwm);
-		rc_write(_servo_channel + 1, inv_servo_pwm);
+		rc_write(_servo_channel + 1, servo_pwm);
+		rc_write(_servo_channel + 0, inv_servo_pwm);
 	} else {
 		// center servo
-		rc_write(_servo_channel + 2, 1500);
-		rc_write(_servo_channel + 1, 1500); 
+		rc_write(_servo_channel + 1, 1500);
+		rc_write(_servo_channel + 0, 1500);
 	}
 
 	AP_MotorsMatrix::output(); 
