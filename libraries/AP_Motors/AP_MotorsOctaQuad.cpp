@@ -98,6 +98,11 @@ void AP_MotorsOctaQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
         add_motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
+
+        // This is for the UFO Build,
+        add_motor_raw(AP_MOTORS_MOT_9, 0.0f, 0.0f, 0.0f, 9);
+        add_motor_raw(AP_MOTORS_MOT_10, 0.0f, 0.0f, 0.0f, 10);
+
     }
 
     // normalise factors to magnitude 0.5
@@ -113,21 +118,14 @@ void AP_MotorsOctaQuad::output(){
 	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000);
 
 	if(_servo_on && _servo_channel > 0){
-		rc_write(_servo_channel + 1, servo_pwm);
-		rc_write(_servo_channel + 2, inv_servo_pwm);
+		rc_write(_servo_channel, servo_pwm);
+		rc_write(_servo_channel + 1, inv_servo_pwm);
 	} else {
 		// center servo
+		rc_write(_servo_channel, 1500);
 		rc_write(_servo_channel + 1, 1500);
-		rc_write(_servo_channel + 2, 1500);
 	}
 
-	rc_write(11, hal.rcin->read(6));
-	rc_write(12, hal.rcin->read(7));
-	rc_write(13, hal.rcin->read(8));
-	rc_write(14, hal.rcin->read(9));
-
-	// radio passthrough (ref: camera switch)
-	//rc_write(_servo_channel + 3, hal.rcin->read(4));
 
 	AP_MotorsMatrix::output();
 }

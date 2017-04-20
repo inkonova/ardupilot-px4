@@ -284,7 +284,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
 /*	for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
 		if (motor_enabled[i]) {
-			if(i < 4){
+			if(i < 8){
 				_thrust_rpyt_out[i] = 0.5f*throttle_thrust_best_rpy + 0.5f*thr_adj + rpy_scale*_thrust_rpyt_out[i];
 			}else{
 				_thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[i];
