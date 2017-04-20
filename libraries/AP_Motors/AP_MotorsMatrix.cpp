@@ -276,13 +276,13 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
-//    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-//        if (motor_enabled[i]) {
-//            _thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[i];
-//        }
-//    }
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            _thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[i];
+        }
+    }
 
-	for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+/*	for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
 		if (motor_enabled[i]) {
 			if(i < 4){
 				_thrust_rpyt_out[i] = 0.5f*throttle_thrust_best_rpy + 0.5f*thr_adj + rpy_scale*_thrust_rpyt_out[i];
@@ -290,7 +290,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 				_thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + rpy_scale*_thrust_rpyt_out[i];
 			}
 		}
-	}
+	}*/
 
     // constrain all outputs to 0.0f to 1.0f
     // test code should be run with these lines commented out as they should not do anything
