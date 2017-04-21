@@ -157,11 +157,6 @@ void AP_MotorsQuad::output(){
 		rc_write(_servo_channel + 1, 1500);
 	}
 
-	rc_write(10, hal.rcin->read(6));
-	rc_write(11, hal.rcin->read(7));
-	rc_write(12, hal.rcin->read(8));
-	rc_write(13, hal.rcin->read(9));
-
 	// radio passthrough (ref: camera switch)
 	//rc_write(_servo_channel + 3, hal.rcin->read(4));
 

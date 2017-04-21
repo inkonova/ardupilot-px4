@@ -186,14 +186,14 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain)
 {
 
-	if(_tilt_frame){
+/*	if(_tilt_frame){
 		Vector3f eu; 
 		attitude_desired_quat.to_euler(eu.x, eu.y, eu.z); 
 		_motor_tilt_pitch_ang = degrees(eu.y); 
 		_attitude_target_euler_angle.y = 0; 
 		attitude_desired_quat.from_euler(eu.x, 0, eu.z); 
 		printf("quat pitch: %lf\n", _motor_tilt_pitch_ang); 
-	}
+	}*/
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -238,10 +238,10 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
-//	if(_tilt_frame){
-//		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01;
-//		euler_pitch_angle = 0;
-//	}
+	if(_tilt_frame){
+		_motor_tilt_pitch_ang = euler_pitch_angle_cd * 0.01;
+		euler_pitch_angle = 0;
+	}
 
     // ensure smoothing gain can not cause overshoot
     smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);
