@@ -149,11 +149,11 @@ void AP_MotorsQuad::output(){
 	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
 
 	if(_servo_on && _servo_channel > 0){
-		rc_write(_servo_channel + 0, servo_pwm);
+		rc_write(_servo_channel, servo_pwm);
 		rc_write(_servo_channel + 1, inv_servo_pwm);
 	} else {
 		// center servo
-		rc_write(_servo_channel + 0, 1500);
+		rc_write(_servo_channel, 1500);
 		rc_write(_servo_channel + 1, 1500);
 	}
 

@@ -18,7 +18,7 @@
 #define AP_MOTORS_MOT_9 	8U
 #define AP_MOTORS_MOT_10 	10U
 
-#define AP_MOTORS_MAX_NUM_MOTORS 8
+#define AP_MOTORS_MAX_NUM_MOTORS 10
 
 // frame definitions
 #define AP_MOTORS_PLUS_FRAME        0
