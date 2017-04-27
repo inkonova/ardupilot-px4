@@ -117,6 +117,8 @@ void AP_MotorsOctaQuad::output(){
 	uint16_t servo_pwm = constrain_int16(1500 + 500 * constrain_float(tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000);
 	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000);
 
+
+	//Servo output will be on Aux pin 3 & 4
 	if(_servo_on && _servo_channel > 0){
 		rc_write(_servo_channel, servo_pwm);
 		rc_write(_servo_channel + 1, inv_servo_pwm);
@@ -126,6 +128,10 @@ void AP_MotorsOctaQuad::output(){
 		rc_write(_servo_channel + 1, 1500);
 	}
 
+	// Rc passthrough channel 7 & 8 output on AUX 5 & 6
+	// Don't forget to assign BRD_PWM_COUNT, RELAY_PIN to use these.
+	rc_write(12, hal.rcin->read(8));
+	rc_write(13, hal.rcin->read(9));
 
 	AP_MotorsMatrix::output();
 }

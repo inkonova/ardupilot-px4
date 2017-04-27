@@ -148,17 +148,20 @@ void AP_MotorsQuad::output(){
 	uint16_t servo_pwm = constrain_int16(1500 + 500 * constrain_float(tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
 	uint16_t inv_servo_pwm = constrain_int16(1500 + 500 * constrain_float(-tilt_pitch / 90.0f, -1.0f, 1.0f), 1000, 2000); 
 
+	//This will be output on Aux Pin 1 & 2
 	if(_servo_on && _servo_channel > 0){
-		rc_write(_servo_channel, servo_pwm);
-		rc_write(_servo_channel + 1, inv_servo_pwm);
+		rc_write(_servo_channel - 1,servo_pwm);
+		rc_write(_servo_channel - 2, inv_servo_pwm);
 	} else {
-		// center servo
-		rc_write(_servo_channel, 1500);
-		rc_write(_servo_channel + 1, 1500);
+		rc_write(_servo_channel - 1, 1500);
+		rc_write(_servo_channel - 2, 1500);
 	}
 
 	// radio passthrough (ref: camera switch)
-	//rc_write(_servo_channel + 3, hal.rcin->read(4));
+	rc_write(10, hal.rcin->read(6));
+	rc_write(11, hal.rcin->read(7));
+	rc_write(12, hal.rcin->read(8));
+	rc_write(13, hal.rcin->read(9));
 
 	AP_MotorsMatrix::output(); 
 }
