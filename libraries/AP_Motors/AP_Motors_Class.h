@@ -16,7 +16,7 @@
 #define AP_MOTORS_MOT_7 	6U
 #define AP_MOTORS_MOT_8 	7U
 #define AP_MOTORS_MOT_9 	8U
-#define AP_MOTORS_MOT_10 	10U
+#define AP_MOTORS_MOT_10 	9U
 
 #define AP_MOTORS_MAX_NUM_MOTORS 10
 
